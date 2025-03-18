@@ -31,7 +31,7 @@ def home():
 #################################################################################################
 
 # Fetch all products
-@main.route('/api/products', methods=['GET'])
+@main.route('/products', methods=['GET'])
 def get_products():
     products = list(products_collection.find({}))
     for product in products:
@@ -42,13 +42,13 @@ def get_products():
     # return jsonify(products)
 
 # Add a new product
-@main.route('/api/products', methods=['POST'])
+@main.route('/products', methods=['POST'])
 def add_product():
     data = request.json  # Get the JSON payload
     products_collection.insert_one(data)  # Insert the data into the collection
     return jsonify({'message': 'Product added successfully!'}), 201
 
-@main.route('/api/products/<name>', methods=['PUT'])
+@main.route('/products/<name>', methods=['PUT'])
 def update_product(name):
     data = request.json
     result = products_collection.update_one({'name': name}, {'$set': data})
@@ -56,14 +56,14 @@ def update_product(name):
         return jsonify({'message': 'Product updated successfully!'})
     return jsonify({'message': 'Product not found!'}), 404
 
-@main.route('/api/products/<name>', methods=['DELETE'])
+@main.route('/products/<name>', methods=['DELETE'])
 def delete_product(name):
     result = products_collection.delete_one({'name': name})
     if result.deleted_count > 0:
         return jsonify({'message': 'Product deleted successfully!'})
     return jsonify({'message': 'Product not found!'}), 404
 
-@main.route('/api/products/under/<float:price>', methods=['GET'])
+@main.route('/products/under/<float:price>', methods=['GET'])
 def get_products_under(price):
     products = list(products_collection.find({'price': {'$lt': price}}, {'_id': 0}))
     return jsonify(products)
@@ -89,7 +89,7 @@ def get_products_under(price):
 
 
 # Add a new Listing
-@main.route('/api/listings', methods=['POST'])
+@main.route('/listings', methods=['POST'])
 def add_listing():
     data = request.json
     if not all(key in data for key in ('Image', 'Price', 'City', 'Category')):
@@ -98,7 +98,7 @@ def add_listing():
     return jsonify({'message': 'Listing added successfully!'}), 201
 
 # Fetch all Listings
-@main.route('/api/listings', methods=['GET'])
+@main.route('/listings', methods=['GET'])
 def get_listings():
     listings = list(listings_collection.find({}))
     for listing in listings:
@@ -106,7 +106,7 @@ def get_listings():
     return jsonify(listings), 200
 
 # Update a Listing
-@main.route('/api/listings/<name>', methods=['PUT'])
+@main.route('/listings/<name>', methods=['PUT'])
 def update_listing(name):
     data = request.json
     result = listings_collection.update_one({'name': name}, {'$set': data})
@@ -114,51 +114,20 @@ def update_listing(name):
         return jsonify({'message': 'Listing updated successfully!'}), 200
     return jsonify({'message': 'Listing not found!'}), 404
 
-# Delete a Listing
-@main.route('/api/listings/<name>', methods=['DELETE'])
-def delete_listing(name):
-    result = listings_collection.delete_one({'name': name})
-    if result.deleted_count > 0:
-        return jsonify({'message': 'Listing deleted successfully!'}), 200
-    return jsonify({'message': 'Listing not found!'}), 404
-
-# Get Listings under a specific price
-@main.route('/api/listings/under/<float:price>', methods=['GET'])
-def get_listings_under(price):
-    listings = list(listings_collection.find({'Price': {'$lt': price}}, {'_id': 0}))
-    return jsonify(listings), 200
-
-    #    _  _   .___________.  ______    _______   ______
-    #  _| || |_ |           | /  __  \  |       \ /  __  \
-    # |_  __  _|`---|  |----`|  |  |  | |  .--.  |  |  |  |
-    #  _| || |_     |  |     |  |  |  | |  |  |  |  |  |  |
-    # |_  __  _|    |  |     |  `--'  | |  '--'  |  `--'  |
-    #   |_||_|      |__|      \______/  |_______/ \______/
-
-    # TO DO Finish Endpoint
-
-    # TO DO check if information is missing same as add listing
-    result = listings_collection.update_one({'name': name}, {'$set': data})
-    if result.matched_count > 0:
-        return jsonify({'message': 'Product updated successfully!'})
-    return jsonify({'message': 'Product not found!'}), 404
-
-
-
-@main.route('/api/listings/<name>', methods=['DELETE'])
+@main.route('/listings/<name>', methods=['DELETE'])
 def delete_listing(name):
     result = listings_collection.delete_one({'name': name})
     if result.deleted_count > 0:
         return jsonify({'message': 'Product deleted successfully!'})
     return jsonify({'message': 'Product not found!'}), 404
 
-@main.route('/api/listings/under/<float:price>', methods=['GET'])
+@main.route('/listings/under/<float:price>', methods=['GET'])
 def get_listings_under(price):
     listings = list(listings_collection.find({'price': {'$lt': price}}, {'_id': 0}))
     return jsonify(listings)
 
 # Get Listings by Category
-@main.route('/api/listings/category/<category>', methods=['GET'])
+@main.route('/listings/category/<category>', methods=['GET'])
 def get_listings_by_category(category):
     listings = list(listings_collection.find({'Category': category}, {'_id': 0}))
     return jsonify(listings), 200
@@ -189,7 +158,7 @@ def get_listings_by_category(category):
 
 
 # Add a new Book
-@main.route('/api/books', methods=['POST'])
+@main.route('/books', methods=['POST'])
 def add_book():
     data = request.json
     if not all(key in data for key in ('item', 'itemLabel', 'linkTo', 'mainSubject', 'mainSubjectLabel')):
@@ -198,7 +167,7 @@ def add_book():
     return jsonify({'message': 'Book added successfully!'}), 201
 
 # Fetch all Books
-@main.route('/api/books', methods=['GET'])
+@main.route('/books', methods=['GET'])
 def get_books():
     books = list(books_collection.find({}))
     for book in books:
@@ -206,7 +175,7 @@ def get_books():
     return jsonify(books), 200
 
 # Update a Book
-@main.route('/api/books/<book_id>', methods=['PUT'])
+@main.route('/books/<book_id>', methods=['PUT'])
 def update_book(book_id):
     data = request.json
     result = books_collection.update_one({'_id': book_id}, {'$set': data})
@@ -215,7 +184,7 @@ def update_book(book_id):
     return jsonify({'message': 'Book not found!'}), 404
 
 # Delete a Book
-@main.route('/api/books/<book_id>', methods=['DELETE'])
+@main.route('/books/<book_id>', methods=['DELETE'])
 def delete_book(book_id):
     result = books_collection.delete_one({'_id': book_id})
     if result.deleted_count > 0:
