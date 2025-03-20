@@ -28,6 +28,7 @@ def create_app():
     app = Flask(__name__)
     app.config['URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+  
 
     # Initialize extensions with the app.
     mongo.init_app(app)
