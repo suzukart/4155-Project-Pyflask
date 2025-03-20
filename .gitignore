@@ -1,4 +1,12 @@
 .env
 /venv
 mongodb_uri.secret
-.idea
+
+# Byte-compiled / optimized / DLL files
+/app/__pycache__
+
+#mac specific
+.DS_Store
+#pycharm specific
+.idea/
+
