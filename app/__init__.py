@@ -18,7 +18,7 @@ mongo = PyMongo()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 
-uri = os.getenv('uri')
+uri = os.getenv('URI')
 client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
