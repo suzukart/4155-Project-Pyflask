@@ -1,3 +1,4 @@
 .env
 /venv
 mongodb_uri.secret
+.idea
