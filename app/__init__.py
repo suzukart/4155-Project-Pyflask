@@ -18,7 +18,7 @@ mongo = PyMongo()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 
-uri = os.getenv('URI')
+uri = os.environ.get('URI')
 client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
@@ -26,8 +26,9 @@ books = db.get_collection('Books')
 
 def create_app():
     app = Flask(__name__)
-    app.config['URI'] = uri
-    app.config['SECRET_KEY'] = os.getenv('secret_key')
+    app.config['MONGO_URI'] = uri
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+  
 
     # Initialize extensions with the app.
     mongo.init_app(app)
