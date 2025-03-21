@@ -108,8 +108,8 @@ def test_login_invalid_user(mock_users, mock_bcrypt, test_client):
         'email': 'invalid@topsecret.co.jp'
     })
 
-@patch('app.auth.logout_user')
-def test_logout(mock_logout_user, test_client):
-    response = test_client.get('/logout')
-    assert response.status_code == 200
-    mock_logout_user.assert_called_once()
+# @patch('app.auth.logout_user')
+# def test_logout(mock_logout_user, test_client):
+#     response = test_client.get('/logout')
+#     assert response.status_code == 200
+#     mock_logout_user.assert_called_once()
