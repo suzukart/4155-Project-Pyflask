@@ -38,4 +38,4 @@ jobs:
       env:
         URI: ${{ secrets.URI }}       
       run: |
-        python run.py
+        pytest
