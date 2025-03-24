@@ -1,8 +1,8 @@
 import os
-
 from flask import Flask
 from flask.cli import load_dotenv
 from flask_pymongo import PyMongo, MongoClient
+from flask_session import Session
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager
 from flask_cors import CORS
@@ -23,13 +23,18 @@ client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
+active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
     app.config['URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
+    app.config["SESSION_TYPE"] = "mongodb"
+    app.config["SESSION_PERMANENT"] = True
+    app.config["SESSION_USE_SIGNER"] = True
 
     # Initialize extensions with the app.
+    Session(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
