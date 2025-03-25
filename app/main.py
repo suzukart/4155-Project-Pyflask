@@ -105,25 +105,53 @@ def get_listings():
         listing['_id'] = str(listing['_id'])
     return jsonify(listings), 200
 
+
+@main.route('/listings/<string:id>', methods=['GET'])
+def get_listing_by_id(id):
+    if not ObjectId.is_valid(id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+    try:
+        listing = listings_collection.find_one({'_id': ObjectId(id)})
+        if listing:
+            listing['_id'] = str(listing['_id'])
+            return jsonify(listing), 200
+        return jsonify({'message': 'Listing not found!'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 # Update a Listing
-@main.route('/listings/<name>', methods=['PUT'])
-def update_listing(name):
+from bson import ObjectId
+
+
+# Update a Listing
+@main.route('/listings/<string:id>', methods=['PUT'])
+def update_listing(id):
+    if not ObjectId.is_valid(id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
     data = request.json
-    result = listings_collection.update_one({'name': name}, {'$set': data})
+    result = listings_collection.update_one({'_id': ObjectId(id)}, {'$set': data})
+
     if result.matched_count > 0:
         return jsonify({'message': 'Listing updated successfully!'}), 200
     return jsonify({'message': 'Listing not found!'}), 404
 
-@main.route('/listings/<name>', methods=['DELETE'])
-def delete_listing(name):
-    result = listings_collection.delete_one({'name': name})
+
+# Delete a Listing
+@main.route('/listings/<string:id>', methods=['DELETE'])
+def delete_listing(id):
+    if not ObjectId.is_valid(id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    result = listings_collection.delete_one({'_id': ObjectId(id)})
+
     if result.deleted_count > 0:
-        return jsonify({'message': 'Product deleted successfully!'})
-    return jsonify({'message': 'Product not found!'}), 404
+        return jsonify({'message': 'Listing deleted successfully!'}), 200
+    return jsonify({'message': 'Listing not found!'}), 404
 
 @main.route('/listings/under/<float:price>', methods=['GET'])
 def get_listings_under(price):
-    listings = list(listings_collection.find({'price': {'$lt': price}}, {'_id': 0}))
+    listings = list(listings_collection.find({'Price': {'$lt': price}}, {'_id': 0}))
     return jsonify(listings)
 
 # Get Listings by Category
@@ -157,14 +185,25 @@ def get_listings_by_category(category):
     #   |_||_|      |__|      \______/  |_______/ \______/
 
 
+from bson import ObjectId
+
+
 # Add a new Book
 @main.route('/books', methods=['POST'])
 def add_book():
     data = request.json
     if not all(key in data for key in ('item', 'itemLabel', 'linkTo', 'mainSubject', 'mainSubjectLabel')):
         return jsonify({'message': 'Missing required fields'}), 400
+
+    # Convert _id to ObjectId if provided
+    if '_id' in data:
+        if not ObjectId.is_valid(data['_id']):
+            return jsonify({'error': 'Invalid ID format!'}), 400
+        data['_id'] = ObjectId(data['_id'])
+
     books_collection.insert_one(data)
     return jsonify({'message': 'Book added successfully!'}), 201
+
 
 # Fetch all Books
 @main.route('/books', methods=['GET'])
@@ -174,19 +213,42 @@ def get_books():
         book['_id'] = str(book['_id'])
     return jsonify(books), 200
 
+
+# Fetch a Book by ID
+@main.route('/books/<string:book_id>', methods=['GET'])
+def get_book_by_id(book_id):
+    if not ObjectId.is_valid(book_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    book = books_collection.find_one({'_id': ObjectId(book_id)})
+    if book:
+        book['_id'] = str(book['_id'])
+        return jsonify(book), 200
+    return jsonify({'message': 'Book not found!'}), 404
+
+
 # Update a Book
-@main.route('/books/<book_id>', methods=['PUT'])
+@main.route('/books/<string:book_id>', methods=['PUT'])
 def update_book(book_id):
+    if not ObjectId.is_valid(book_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
     data = request.json
-    result = books_collection.update_one({'_id': book_id}, {'$set': data})
+    result = books_collection.update_one({'_id': ObjectId(book_id)}, {'$set': data})
     if result.matched_count > 0:
         return jsonify({'message': 'Book updated successfully!'}), 200
     return jsonify({'message': 'Book not found!'}), 404
 
+
 # Delete a Book
-@main.route('/books/<book_id>', methods=['DELETE'])
+@main.route('/books/<string:book_id>', methods=['DELETE'])
 def delete_book(book_id):
-    result = books_collection.delete_one({'_id': book_id})
+    if not ObjectId.is_valid(book_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    result = books_collection.delete_one({'_id': ObjectId(book_id)})
     if result.deleted_count > 0:
         return jsonify({'message': 'Book deleted successfully!'}), 200
     return jsonify({'message': 'Book not found!'}), 404
+
+
