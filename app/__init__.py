@@ -7,7 +7,7 @@ from flask_session import Session
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user, logout_user
 from flask_cors import CORS
-from bson.objectid import ObjectId
+from bson import ObjectId
 
 current_directory_name = os.path.dirname(os.path.abspath('database_creation.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
