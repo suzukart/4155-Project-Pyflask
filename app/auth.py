@@ -16,7 +16,7 @@ def cookie_handler(user_info):
     if not device_id:
         device_id = str(uuid.uuid4())
     session['device_id'] = device_id
-    
+    session.modified = True
     return device_id
 
 @auth.route('/signup', methods=['POST', 'GET'])
@@ -94,12 +94,6 @@ def login():
 @login_required
 def logout():
     session.permanent = False
-    sid = session.get('sid')
-    if sid:
-        users.update_one(
-            {'_id': current_user.db_id},
-            {'$pull': {'sessions': {'sid': sid}}}
-        )
     session.clear()
     logout_user()
     return jsonify({'message': 'Logged out successfully'}), 200
