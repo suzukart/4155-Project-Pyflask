@@ -33,7 +33,10 @@ def create_app():
     app.config["SESSION_MONGODB"] = client
     app.config["SESSION_TYPE"] = "mongodb"
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 =======
+=======
+>>>>>>> Stashed changes
     app.config["SESSION_MONGODB_DB"] = 'textbookstore'
     app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
 >>>>>>> Stashed changes
