@@ -3,7 +3,6 @@ import uuid
 from flask import Flask, request, session, jsonify, after_this_request
 from flask.cli import load_dotenv
 from flask_pymongo import PyMongo, MongoClient
-from flask_session import Session
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user, logout_user
 from flask_cors import CORS
@@ -28,17 +27,10 @@ active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
-    app.config['MONGO_URI'] = uri
+    app.config['URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
-    app.config["SESSION_MONGODB"] = client
-    app.config["SESSION_TYPE"] = "mongodb"
-    app.config["SESSION_MONGODB_DB"] = "textbookstore"
-    app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
-    app.config["SESSION_PERMANENT"] = True
-    app.config["SESSION_USE_SIGNER"] = True
 
     # Initialize extensions with the app.
-    Session(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
@@ -69,17 +61,23 @@ def create_app():
 
         if not device_id:
             device_id = str(uuid.uuid4())
+
             @after_this_request
             def set_device_cookie(response):
                 response.set_cookie(device_cookie_name, device_id, httponly=True)
                 return response
 
-        if current_user.is_authenticated:
+        # If the user is authenticated, do some check with device_id
+        if current_user.is_authenticated and device_id:
             current_sid = session.get('sid')
-            matching_session = active_sessions.find_one({
-                "sid": current_sid,
-                "user_id": current_user.get_id()
-            })
+
+            user_doc = users.find_one({"_id": ObjectId(current_user.get_id())})
+
+            sessions = user_doc.get('sessions', [])
+            matching_session = next(
+                (s for s in sessions if s.get('sid') == current_sid),
+                None
+            )
             if not matching_session:
                 logout_user()
                 return jsonify({'error': 'Session expired. Please log in again.'}), 401
