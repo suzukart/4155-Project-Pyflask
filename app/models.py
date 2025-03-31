@@ -8,6 +8,8 @@ class Profile(UserMixin):
         self.email = user_data['email']
         self.username = user_data['username']
         self.password = user_data['password']
+        self.sessions = user_data['sessions']
+        self.device_id = user_data['device_id']
 
     def get_id(self):
         """Return the user ID (used by Flask-Login)."""
