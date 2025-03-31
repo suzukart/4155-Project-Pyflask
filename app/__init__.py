@@ -32,6 +32,11 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('secret_key')
     app.config["SESSION_MONGODB"] = client
     app.config["SESSION_TYPE"] = "mongodb"
+<<<<<<< Updated upstream
+=======
+    app.config["SESSION_MONGODB_DB"] = 'textbookstore'
+    app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
+>>>>>>> Stashed changes
     app.config["SESSION_PERMANENT"] = True
     app.config["SESSION_USE_SIGNER"] = True
 
