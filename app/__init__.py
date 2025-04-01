@@ -7,6 +7,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user, logout_user, login_user
 from flask_cors import CORS
 from bson import ObjectId
+from flask_session import Session
 
 current_directory_name = os.path.dirname(os.path.abspath('database_creation.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
@@ -30,7 +31,15 @@ def create_app():
     app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
 
+    app.config['SESSION_TYPE'] = 'mongodb'
+    app.config['SESSION_MONGODB'] = client
+    app.config['SESSION_MONGODB_DB'] = 'textbookstore'
+    app.config['SESSION_MONGODB_COLLECT'] = 'active_sessions'
+    app.config['SESSION_USE_SIGNER'] = True
+    app.config['SESSION_PERMANENT'] = False
+
     # Initialize extensions with the app.
+    Session(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
@@ -65,28 +74,15 @@ def create_app():
                     login_user(user)
 
     @app.before_request
-    def check_device_id():
+    def ensure_device_cookie():
         device_cookie_name = "my_device_id"
         device_id = request.cookies.get(device_cookie_name)
-
         if not device_id:
-            # Generate a new device id if not present
             device_id = str(uuid.uuid4())
             @after_this_request
             def set_device_cookie(response):
                 response.set_cookie(device_cookie_name, device_id, httponly=True)
                 return response
-
-        # This block is executed on every request for an authenticated user.
-        if current_user.is_authenticated:
-            current_sid = session.get('sid')
-            # Look up the current session in the user's stored sessions
-            user_doc = users.find_one({"_id": ObjectId(current_user.get_id())})
-            sessions = user_doc.get('sessions', [])
-            matching_session = next((s for s in sessions if s.get('sid') == current_sid), None)
-            if not matching_session:
-                logout_user()
-                return jsonify({'error': 'Session expired. Please log in again.'}), 401
 
 
     # Register blueprints
