@@ -93,6 +93,7 @@ def login():
     data = request.get_json() # get JSON payload
     email = data['email']
     password = data['password']
+    print(password)
     user_info = users.find_one(
         {'email': email}
     )
