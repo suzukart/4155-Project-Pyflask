@@ -1,13 +1,24 @@
 import pytest
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from unittest.mock import patch
 from app import create_app
 from bson import ObjectId
 from flask_login import login_user
 from app.models import Profile
 
+from dotenv import load_dotenv
+import pytest
+from app import create_app
+
+load_dotenv()
+
+print("Running auth tests...")
 
 @pytest.fixture
 def test_app():
+    print("Now running app tests...")
     app = create_app()
     app.config['TESTING'] = True
     yield app
