@@ -27,7 +27,7 @@ active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
-    app.config['URI'] = uri
+    app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
     app.config["SESSION_TYPE"] = "mongodb"
     app.config["SESSION_PERMANENT"] = True
