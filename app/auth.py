@@ -1,7 +1,6 @@
-from flask import Blueprint, request, jsonify, session, after_this_request
+from flask import Blueprint, request, jsonify, session
 import bcrypt, uuid
-from bson import ObjectId
-from app import bcrypt, users, Session
+from app import bcrypt, users
 from app.models import Profile
 from flask_login import current_user, login_required, login_user, logout_user
 
@@ -16,39 +15,13 @@ def cookie_handler(user_info):
     if not device_id:
         device_id = str(uuid.uuid4())
 
+    session_obj = {
+        'sid': sid,
+        'device_id': device_id,
+    }
+
     users.update_one({'_id': user_info['_id']},
-                     {'$push': {
-                         'sessions': sid,
-                         'device_id': device_id
-                     }})
-
-@auth.before_request
-def check_device_id():
-    device_cookie_name = "my_device_id"
-    device_id = request.cookies.get(device_cookie_name)
-
-    if not device_id:
-        device_id = str(uuid.uuid4())
-
-        @after_this_request
-        def set_device_cookie(response):
-            response.set_cookie(device_cookie_name, device_id, httponly=True)
-            return response
-
-    # If the user is authenticated, do some check with device_id
-    if current_user.is_authenticated and device_id:
-        current_sid = session.get('sid')
-
-        user_doc = users.find_one({"_id": ObjectId(current_user.get_id())})
-
-        sessions = user_doc.get('sessions', [])
-        matching_session = next(
-            (s for s in sessions if s.get('sid') == current_sid),
-            None
-        )
-        if not matching_session:
-            logout_user()
-            return jsonify({'error': 'Session expired. Please log in again.'}), 401
+                     {'$push': {'sessions': session_obj}})
 
 @auth.route('/signup', methods=['POST', 'GET'])
 def signup():
@@ -73,7 +46,8 @@ def signup():
         'password': hashed,
         'sessions': []
     }
-    users.insert_one(user_info)
+    result = users.insert_one(user_info)
+    user_info['_id'] = result.inserted_id
     login_user(Profile(user_info))
     cookie_handler(user_info)
 
@@ -83,7 +57,8 @@ def signup():
         'user': {
             'id': current_user.get_id(),
             'email': current_user.email,
-            'username': current_user.username
+            'username': current_user.username,
+            'sessions': current_user.sessions
         },
         'redirect': '/'
     }), 201
