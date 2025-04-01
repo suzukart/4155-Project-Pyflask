@@ -4,7 +4,7 @@ from flask import Flask, request, session, jsonify, after_this_request
 from flask.cli import load_dotenv
 from flask_pymongo import PyMongo, MongoClient
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, current_user, logout_user
+from flask_login import LoginManager, current_user, logout_user, login_user
 from flask_cors import CORS
 from bson import ObjectId
 
@@ -53,6 +53,16 @@ def create_app():
         if not user_data:
             return None
         return Profile(user_data)
+    @app.before_request
+    def auto_login_from_remember_token():
+        if not current_user.is_authenticated:
+            remember_token = request.cookies.get("remember_token")
+            if remember_token:
+                user_data = users.find_one({"remember_tokens": remember_token})
+                if user_data:
+                    from app.models import Profile
+                    user = Profile(user_data)
+                    login_user(user)
 
     @app.before_request
     def check_device_id():
