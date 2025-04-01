@@ -143,16 +143,18 @@ def update_listing(id):
 # Delete a Listing
 @main.route('/listings/<string:id>', methods=['DELETE'])
 def delete_listing(id):
-    print("🔍 Trying to delete ID:", id)  # line for debugging
+    from bson import ObjectId
 
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    result = listings_collection.delete_one({'_id': ObjectId(id)})
+    object_id = ObjectId(id)  # convert string to ObjectId
+    result = listings_collection.delete_one({'_id': object_id})
 
     if result.deleted_count > 0:
         return jsonify({'message': 'Listing deleted successfully!'}), 200
     return jsonify({'message': 'Product not found!'}), 404
+
 
 
 @main.route('/listings/under/<float:price>', methods=['GET'])
