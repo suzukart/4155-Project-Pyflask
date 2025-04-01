@@ -7,6 +7,7 @@ main = Blueprint('main', __name__)
 products_collection = db['products']  # Access the "products" collection
 listings_collection = db['Listings']  # Access the "Listings" collection
 books_collection = db['Books'] # Access the "Books" collection
+users_collection = db['Users'] # Access the "Users" collection
 
 
 @main.route('/')
@@ -252,3 +253,84 @@ def delete_book(book_id):
     return jsonify({'message': 'Book not found!'}), 404
 
 
+#################################################################################################
+
+            #
+            #  _____             _                _         _
+            # | ____| _ __    __| | _ __    ___  (_) _ __  | |_  ___
+            # |  _|  | '_ \  / _` || '_ \  / _ \ | || '_ \ | __|/ __|
+            # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
+            # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
+            #                      |_|
+
+################################################################################################
+
+    #    _  _   .___________.  ______    _______   ______
+    #  _| || |_ |           | /  __  \  |       \ /  __  \
+    # |_  __  _|`---|  |----`|  |  |  | |  .--.  |  |  |  |
+    #  _| || |_     |  |     |  |  |  | |  |  |  |  |  |  |
+    # |_  __  _|    |  |     |  `--'  | |  '--'  |  `--'  |
+    #   |_||_|      |__|      \______/  |_______/ \______/
+
+    #Complete User endpoints
+
+# Add a new User
+@main.route('/users', methods=['POST'])
+def add_user():
+    data = request.json
+
+    # Convert _id to ObjectId if provided
+    if '_id' in data:
+        if not ObjectId.is_valid(data['_id']):
+            return jsonify({'error': 'Invalid ID format!'}), 400
+        data['_id'] = ObjectId(data['_id'])
+
+    users_collection.insert_one(data)
+    return jsonify({'message': 'User added successfully!'}), 201
+
+
+# Fetch all Users
+@main.route('/users', methods=['GET'])
+def get_users():
+    users = list(users_collection.find({}))
+    for user in users:
+        user['_id'] = str(user['_id'])
+    return jsonify(users), 200
+
+
+# Fetch a User by ID
+@main.route('/users/<string:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    user = users_collection.find_one({'_id': ObjectId(user_id)})
+    if user:
+        user['_id'] = str(user['_id'])
+        return jsonify(user), 200
+    return jsonify({'message': 'User not found!'}), 404
+
+
+# Update a User
+@main.route('/users/<string:user_id>', methods=['PUT'])
+def update_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    data = request.json
+    result = users_collection.update_one({'_id': ObjectId(user_id)}, {'$set': data})
+    if result.matched_count > 0:
+        return jsonify({'message': 'User updated successfully!'}), 200
+    return jsonify({'message': 'User not found!'}), 404
+
+
+# Delete a User
+@main.route('/users/<string:user_id>', methods=['DELETE'])
+def delete_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    result = users_collection.delete_one({'_id': ObjectId(user_id)})
+    if result.deleted_count > 0:
+        return jsonify({'message': 'User deleted successfully!'}), 200
+    return jsonify({'message': 'User not found!'}), 404
