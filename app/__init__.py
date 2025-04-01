@@ -1,6 +1,11 @@
 import os
+<<<<<<< HEAD
 import uuid
 from flask import Flask, request, session, jsonify, after_this_request
+=======
+
+from flask import Flask
+>>>>>>> parent of ecbea07 (initial commit)
 from flask.cli import load_dotenv
 from flask_pymongo import PyMongo, MongoClient
 from flask_bcrypt import Bcrypt
@@ -24,12 +29,12 @@ client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
-active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
     app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
+<<<<<<< HEAD
 
     app.config['SESSION_TYPE'] = 'mongodb'
     app.config['SESSION_MONGODB'] = client
@@ -37,9 +42,10 @@ def create_app():
     app.config['SESSION_MONGODB_COLLECT'] = 'active_sessions'
     app.config['SESSION_USE_SIGNER'] = True
     app.config['SESSION_PERMANENT'] = False
+=======
+>>>>>>> parent of ecbea07 (initial commit)
 
     # Initialize extensions with the app.
-    Session(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
