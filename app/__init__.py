@@ -1,18 +1,12 @@
 import os
-<<<<<<< HEAD
-import uuid
-from flask import Flask, request, session, jsonify, after_this_request
-=======
 
 from flask import Flask
->>>>>>> parent of ecbea07 (initial commit)
 from flask.cli import load_dotenv
 from flask_pymongo import PyMongo, MongoClient
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager, current_user, logout_user, login_user
+from flask_login import LoginManager
 from flask_cors import CORS
-from bson import ObjectId
-from flask_session import Session
+from bson.objectid import ObjectId
 
 current_directory_name = os.path.dirname(os.path.abspath('database_creation.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
@@ -32,18 +26,8 @@ books = db.get_collection('Books')
 
 def create_app():
     app = Flask(__name__)
-    app.config['MONGO_URI'] = uri
+    app.config['URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
-<<<<<<< HEAD
-
-    app.config['SESSION_TYPE'] = 'mongodb'
-    app.config['SESSION_MONGODB'] = client
-    app.config['SESSION_MONGODB_DB'] = 'textbookstore'
-    app.config['SESSION_MONGODB_COLLECT'] = 'active_sessions'
-    app.config['SESSION_USE_SIGNER'] = True
-    app.config['SESSION_PERMANENT'] = False
-=======
->>>>>>> parent of ecbea07 (initial commit)
 
     # Initialize extensions with the app.
     mongo.init_app(app)
@@ -68,28 +52,6 @@ def create_app():
         if not user_data:
             return None
         return Profile(user_data)
-    @app.before_request
-    def auto_login_from_remember_token():
-        if not current_user.is_authenticated:
-            remember_token = request.cookies.get("remember_token")
-            if remember_token:
-                user_data = users.find_one({"remember_tokens": remember_token})
-                if user_data:
-                    from app.models import Profile
-                    user = Profile(user_data)
-                    login_user(user)
-
-    @app.before_request
-    def ensure_device_cookie():
-        device_cookie_name = "my_device_id"
-        device_id = request.cookies.get(device_cookie_name)
-        if not device_id:
-            device_id = str(uuid.uuid4())
-            @after_this_request
-            def set_device_cookie(response):
-                response.set_cookie(device_cookie_name, device_id, httponly=True)
-                return response
-
 
     # Register blueprints
     from app.auth import auth as auth_blueprint
