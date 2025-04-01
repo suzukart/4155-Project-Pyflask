@@ -40,7 +40,8 @@ def signup():
         'user': {
             'id': current_user.get_id(),
             'email': current_user.email,
-            'username': current_user.username
+            'username': current_user.username,
+            'session': session['sid']
         },
         'redirect': '/'
     }), 201
@@ -62,7 +63,8 @@ def login():
                 'user': {
                     'id': user.get_id(),
                     'email': user.email,
-                    'username': user.username
+                    'username': user.username,
+                    'session': session['sid']
                 },
                 'redirect': '/'
             }), 200
