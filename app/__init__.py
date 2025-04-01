@@ -60,27 +60,24 @@ def create_app():
         device_id = request.cookies.get(device_cookie_name)
 
         if not device_id:
+            # Generate a new device id if not present
             device_id = str(uuid.uuid4())
-
             @after_this_request
             def set_device_cookie(response):
                 response.set_cookie(device_cookie_name, device_id, httponly=True)
                 return response
 
-        # If the user is authenticated, do some check with device_id
-        if current_user.is_authenticated and device_id:
+        # This block is executed on every request for an authenticated user.
+        if current_user.is_authenticated:
             current_sid = session.get('sid')
-
+            # Look up the current session in the user's stored sessions
             user_doc = users.find_one({"_id": ObjectId(current_user.get_id())})
-
             sessions = user_doc.get('sessions', [])
-            matching_session = next(
-                (s for s in sessions if s.get('sid') == current_sid),
-                None
-            )
+            matching_session = next((s for s in sessions if s.get('sid') == current_sid), None)
             if not matching_session:
                 logout_user()
                 return jsonify({'error': 'Session expired. Please log in again.'}), 401
+
 
     # Register blueprints
     from app.auth import auth as auth_blueprint
