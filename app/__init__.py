@@ -9,7 +9,7 @@ from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_cors import CORS
 from bson.objectid import ObjectId
 
-current_directory_name = os.path.dirname(os.path.abspath('database_creation.py'))
+current_directory_name = os.path.dirname(os.path.abspath('__init__.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
 load_dotenv(f"{parent_directory_name}/.env")
 
@@ -19,7 +19,7 @@ mongo = PyMongo()
 bcrypt = Bcrypt()
 login_manager = LoginManager()
 
-uri = os.getenv('URI')
+uri = os.getenv('MONGO_URI')
 client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
@@ -28,9 +28,12 @@ active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
-    app.config['URI'] = uri
+    app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
     app.config["SESSION_TYPE"] = "mongodb"
+    app.config["SESSION_MONGODB"] = client
+    app.config["SESSION_MONGODB_DB"] = "textbookstore"
+    app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
     app.config["SESSION_PERMANENT"] = True
     app.config["SESSION_USE_SIGNER"] = True
 
