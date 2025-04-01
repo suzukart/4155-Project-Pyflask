@@ -1,7 +1,5 @@
 from flask import jsonify, request, Blueprint
 from app import db
-from bson import ObjectId
-
 
 main = Blueprint('main', __name__)
 
@@ -143,19 +141,14 @@ def update_listing(id):
 # Delete a Listing
 @main.route('/listings/<string:id>', methods=['DELETE'])
 def delete_listing(id):
-    from bson import ObjectId
-
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    object_id = ObjectId(id)  # convert string to ObjectId
-    result = listings_collection.delete_one({'_id': object_id})
+    result = listings_collection.delete_one({'_id': ObjectId(id)})
 
     if result.deleted_count > 0:
         return jsonify({'message': 'Listing deleted successfully!'}), 200
-    return jsonify({'message': 'Product not found!'}), 404
-
-
+    return jsonify({'message': 'Listing not found!'}), 404
 
 @main.route('/listings/under/<float:price>', methods=['GET'])
 def get_listings_under(price):
