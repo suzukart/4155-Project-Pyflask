@@ -144,7 +144,7 @@ def delete_listing(id):
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    result = listings_collection.delete_one({'_id': ObjectId(id)})
+    result = listings_collection.delete_one({'_id': id})
 
     if result.deleted_count > 0:
         return jsonify({'message': 'Listing deleted successfully!'}), 200
