@@ -141,10 +141,12 @@ def update_listing(id):
 # Delete a Listing
 @main.route('/listings/<string:id>', methods=['DELETE'])
 def delete_listing(id):
-    if not ObjectId.is_valid(id):
-        return jsonify({'error': 'Invalid ID format!'}), 400
+    try:
+        query = {'_id': ObjectId(id)}
+    except:
+        query = {'_id': id}  # fallback if not a valid ObjectId
 
-    result = listings_collection.delete_one({'_id': id})
+    result = listings_collection.delete_one(query)
 
     if result.deleted_count > 0:
         return jsonify({'message': 'Listing deleted successfully!'}), 200
