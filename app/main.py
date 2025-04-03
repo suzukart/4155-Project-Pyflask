@@ -1,5 +1,6 @@
 from flask import jsonify, request, Blueprint
 from app import db
+from bson import ObjectId
 
 main = Blueprint('main', __name__)
 
@@ -119,9 +120,6 @@ def get_listing_by_id(id):
         return jsonify({'message': 'Listing not found!'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-
-# Update a Listing
-from bson import ObjectId
 
 
 # Update a Listing
