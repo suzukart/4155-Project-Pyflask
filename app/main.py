@@ -2,6 +2,7 @@ from flask import jsonify, request, Blueprint
 from app import db
 from bson import ObjectId
 
+
 main = Blueprint('main', __name__)
 
 # Connect to MongoDB
