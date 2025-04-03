@@ -1,5 +1,5 @@
 from flask import jsonify, request, Blueprint
-from app import db
+from app import db, users
 
 main = Blueprint('main', __name__)
 
@@ -332,7 +332,8 @@ def delete_user(user_id):
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    result = users_collection.delete_one({'_id': ObjectId(user_id)})
+    result = users.delete_one({'_id': ObjectId(user_id)})
+    print(result.deleted_count)
     if result.deleted_count > 0:
         return jsonify({'message': 'User deleted successfully!'}), 200
     return jsonify({'message': 'User not found!'}), 404
