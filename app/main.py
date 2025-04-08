@@ -1,5 +1,7 @@
 from flask import jsonify, request, Blueprint
 from app import db
+import users
+from bson import ObjectId
 
 main = Blueprint('main', __name__)
 
@@ -121,7 +123,7 @@ def get_listing_by_id(id):
         return jsonify({'error': str(e)}), 400
 
 # Update a Listing
-from bson import ObjectId
+# from bson import ObjectId
 
 
 # Update a Listing
@@ -186,7 +188,7 @@ def get_listings_by_category(category):
     #   |_||_|      |__|      \______/  |_______/ \______/
 
 
-from bson import ObjectId
+
 
 
 # Add a new Book
@@ -334,3 +336,87 @@ def delete_user(user_id):
     if result.deleted_count > 0:
         return jsonify({'message': 'User deleted successfully!'}), 200
     return jsonify({'message': 'User not found!'}), 404
+
+
+#################################################################################################
+
+            #
+            #  _____             _                _         _
+            # | ____| _ __    __| | _ __    ___  (_) _ __  | |_  ___
+            # |  _|  | '_ \  / _` || '_ \  / _ \ | || '_ \ | __|/ __|
+            # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
+            # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
+            #                      |_|
+
+################################################################################################
+
+
+@main.route('/buy', methods=['POST'])
+def buy_items():
+    data = request.json
+    user_id = data.get('user_id')
+
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID'}), 400
+
+    user = users_collection.find_one({'_id': ObjectId(user_id)})
+    if not user or 'cart' not in user or not user['cart']:
+        return jsonify({'error': 'Cart is empty or user not found'}), 400
+
+    item_ids = user['cart']
+    result = listings_collection.update_many(
+        {'_id': {'$in': [ObjectId(item_id) for item_id in item_ids]}},
+        {'$set': {'status': 'sold'}}
+    )
+
+    users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'cart': []}}
+    )
+
+    return jsonify({'message': f'{result.modified_count} item(s) purchased and cart emptied.'}), 200
+
+
+@main.route('/sell', methods=['POST'])
+def sell_item():
+    data = request.json
+    user_id = data.get('user_id')
+    item_data = data.get('item')
+
+    if not ObjectId.is_valid(user_id) or not item_data:
+        return jsonify({'error': 'Invalid data'}), 400
+
+    # Insert the new listing
+    item_data['status'] = 'available'
+    result = listings_collection.insert_one(item_data)
+    listing_id = result.inserted_id
+
+    # Update user with selling list
+    users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$push': {'selling': listing_id}}
+    )
+
+    return jsonify({'message': 'Item listed for sale', 'listing_id': str(listing_id)}), 201
+
+@main.route('/cart', methods=['POST'])
+def add_to_cart():
+    data = request.json
+    user_id = data.get('user_id')
+    item_id = data.get('item_id')
+
+    if not ObjectId.is_valid(user_id) or not ObjectId.is_valid(item_id):
+        return jsonify({'error': 'Invalid IDs'}), 400
+
+    # Make sure item exists and is not sold
+    item = listings_collection.find_one({'_id': ObjectId(item_id), 'status': {'$ne': 'sold'}})
+    if not item:
+        return jsonify({'error': 'Item not available'}), 404
+
+    # Add to user's cart
+    users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$addToSet': {'cart': ObjectId(item_id)}}  # avoids duplicates
+    )
+
+    return jsonify({'message': 'Item added to cart'}), 200
