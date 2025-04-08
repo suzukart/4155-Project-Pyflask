@@ -1,6 +1,5 @@
 from flask import jsonify, request, Blueprint
-from app import db
-import users
+from app import db,users
 from bson import ObjectId
 
 main = Blueprint('main', __name__)
