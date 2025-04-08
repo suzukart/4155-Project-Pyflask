@@ -379,24 +379,42 @@ def buy_items():
 @main.route('/sell', methods=['POST'])
 def sell_item():
     data = request.json
-    user_id = data.get('user_id')
-    item_data = data.get('item')
 
-    if not ObjectId.is_valid(user_id) or not item_data:
-        return jsonify({'error': 'Invalid data'}), 400
+    # Required fields
+    required_fields = ['Image', 'Price', 'City', 'Category', 'Title', 'user_id']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
 
-    # Insert the new listing
-    item_data['status'] = 'available'
-    result = listings_collection.insert_one(item_data)
-    listing_id = result.inserted_id
+    # Validate user ID format
+    if not ObjectId.is_valid(data['user_id']):
+        return jsonify({'error': 'Invalid user ID'}), 400
 
-    # Update user with selling list
+    # Check if user exists
+    user = users_collection.find_one({'_id': ObjectId(data['user_id'])})
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Add seller info to the listing
+    new_listing = {
+        'Image': data['Image'],
+        'Price': float(data['Price']),
+        'City': data['City'],
+        'Category': data['Category'],
+        'Title': data['Title'],
+        'SellerID': ObjectId(data['user_id']),
+        'Status': 'available'
+    }
+
+    # Insert the listing
+    result = listings_collection.insert_one(new_listing)
+
+    # Optional: Update user's document with new listing ID
     users_collection.update_one(
-        {'_id': ObjectId(user_id)},
-        {'$push': {'selling': listing_id}}
+        {'_id': ObjectId(data['user_id'])},
+        {'$addToSet': {'listings': result.inserted_id}}
     )
 
-    return jsonify({'message': 'Item listed for sale', 'listing_id': str(listing_id)}), 201
+    return jsonify({'message': 'Item listed for sale!', 'listing_id': str(result.inserted_id)}), 201
 
 @main.route('/cart', methods=['POST'])
 def add_to_cart():
