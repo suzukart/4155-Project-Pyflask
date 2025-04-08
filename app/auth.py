@@ -107,8 +107,10 @@ def logout():
     sid = session.get('sid')
 
     if sid:
-        users.update_one({'_id': current_user.db_id},
-                         {'$pull': {'sessions': sid}})
+        users.update_one(
+    {'_id': current_user.db_id},
+    {'$pull': {'sessions': {'sid': sid}}}
+)
 
     session.clear()
     logout_user()

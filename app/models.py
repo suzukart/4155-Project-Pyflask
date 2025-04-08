@@ -31,3 +31,14 @@ class Listing:
     def get_id(self):
         """Return the user ID (used by Flask-Login)."""
         return self._id
+
+class chat_room:
+    def __init__(self, room_data):
+        """Initialize Profile object with data from MongoDB."""
+        self._id = str(room_data['_id'])  # Convert ObjectId to string for Flask
+        self.room_name = room_data['room_name']
+        self.room_id = room_data['room_id']
+        self.room_poster = room_data['room_poster']
+        self.room_description = room_data['room_description']
+        self.room_image = room_data['room_image']
+        self.room_members = room_data['room_members']

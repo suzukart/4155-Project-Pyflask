@@ -4,7 +4,7 @@ import threading
 from flask_login import current_user
 from bson import ObjectId
 
-from app import users
+# from app import users
 
 HOST = '127.0.0.1'  # Server IP (localhost for testing)
 PORT = 8081         # The server's port
@@ -12,8 +12,7 @@ PORT = 8081         # The server's port
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 
-user_data = users.get_collection('users').find_one({"_id": ObjectId(current_user.get_id())})
-username = user_data.get('username', 'Guest')
+username = input('Enter your username: ')
 client.send(username.encode('utf-8'))
 
 def receive_messages():

@@ -8,6 +8,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_cors import CORS
 from bson.objectid import ObjectId
+from flask_socketio import SocketIO
 
 current_directory_name = os.path.dirname(os.path.abspath('__init__.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
@@ -24,21 +25,26 @@ client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
+listings = db.get_collection('Listings')
+socketio = SocketIO()
 active_sessions = db.get_collection('active_sessions')
 
 def create_app():
     app = Flask(__name__)
     app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
+
+    #Session stuff
     app.config["SESSION_TYPE"] = "mongodb"
     app.config["SESSION_MONGODB"] = client
     app.config["SESSION_MONGODB_DB"] = "textbookstore"
     app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
     app.config["SESSION_PERMANENT"] = True
     app.config["SESSION_USE_SIGNER"] = True
+    Session(app)
 
     # Initialize extensions with the app.
-    Session(app)
+    socketio.init_app(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
