@@ -1,5 +1,6 @@
 from flask import jsonify, request, Blueprint
-from app import db, users
+from app import db, bcrypt
+from bson import ObjectId
 
 main = Blueprint('main', __name__)
 
@@ -9,28 +10,24 @@ listings_collection = db['Listings']  # Access the "Listings" collection
 books_collection = db['Books'] # Access the "Books" collection
 users_collection = db['Users'] # Access the "Users" collection
 
-
 @main.route('/')
 def home():
     return 'Welcome to the Store API! Now working with Flask+MongoDB!'
 
 #################################################################################################
-
-            #  ____                   _               _
             # |  _ \  _ __  ___    __| | _   _   ___ | |_
             # | |_) || '__|/ _ \  / _` || | | | / __|| __|
             # |  __/ | |  | (_) || (_| || |_| || (__ | |_
             # |_|    |_|   \___/  \__,_| \__,_| \___| \__|
-            #
             #  _____             _                _         _
             # | ____| _ __    __| | _ __    ___  (_) _ __  | |_  ___
             # |  _|  | '_ \  / _` || '_ \  / _ \ | || '_ \ | __|/ __|
             # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
             # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
             #                      |_|
-
 #################################################################################################
-
+#Some endpoints created with the help of ChatGPT
+###############################################
 # Fetch all products
 @main.route('/products', methods=['GET'])
 def get_products():
@@ -69,11 +66,7 @@ def get_products_under(price):
     products = list(products_collection.find({'price': {'$lt': price}}, {'_id': 0}))
     return jsonify(products)
 
-
-
 #################################################################################################
-
-            #  _      _       _    _
             # | |    (_) ___ | |_ (_) _ __    __ _
             # | |    | |/ __|| __|| || '_ \  / _` |
             # | |___ | |\__ \| |_ | || | | || (_| |
@@ -85,9 +78,7 @@ def get_products_under(price):
             # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
             # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
             #                      |_|
-
 ################################################################################################
-
 
 # Add a new Listing
 @main.route('/listings', methods=['POST'])
@@ -106,7 +97,6 @@ def get_listings():
         listing['_id'] = str(listing['_id'])
     return jsonify(listings), 200
 
-
 @main.route('/listings/<string:id>', methods=['GET'])
 def get_listing_by_id(id):
     if not ObjectId.is_valid(id):
@@ -121,10 +111,6 @@ def get_listing_by_id(id):
         return jsonify({'error': str(e)}), 400
 
 # Update a Listing
-from bson import ObjectId
-
-
-# Update a Listing
 @main.route('/listings/<string:id>', methods=['PUT'])
 def update_listing(id):
     if not ObjectId.is_valid(id):
@@ -137,16 +123,13 @@ def update_listing(id):
         return jsonify({'message': 'Listing updated successfully!'}), 200
     return jsonify({'message': 'Listing not found!'}), 404
 
-
 # Delete a Listing
 @main.route('/listings/<string:id>', methods=['DELETE'])
 def delete_listing(id):
-    try:
-        query = {'_id': ObjectId(id)}
-    except:
-        query = {'_id': id}  # fallback if not a valid ObjectId
+    if not ObjectId.is_valid(id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
 
-    result = listings_collection.delete_one(query)
+    result = listings_collection.delete_one({'_id': ObjectId(id)})
 
     if result.deleted_count > 0:
         return jsonify({'message': 'Listing deleted successfully!'}), 200
@@ -163,10 +146,7 @@ def get_listings_by_category(category):
     listings = list(listings_collection.find({'Category': category}, {'_id': 0}))
     return jsonify(listings), 200
 
-
 #################################################################################################
-
-            #  ____                 _
             # | __ )   ___    ___  | | __
             # |  _ \  / _ \  / _ \ | |/ /
             # | |_) || (_) || (_) ||   <
@@ -177,19 +157,7 @@ def get_listings_by_category(category):
             # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
             # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
             #                      |_|
-
 ################################################################################################
-
-    #    _  _   .___________.  ______    _______   ______
-    #  _| || |_ |           | /  __  \  |       \ /  __  \
-    # |_  __  _|`---|  |----`|  |  |  | |  .--.  |  |  |  |
-    #  _| || |_     |  |     |  |  |  | |  |  |  |  |  |  |
-    # |_  __  _|    |  |     |  `--'  | |  '--'  |  `--'  |
-    #   |_||_|      |__|      \______/  |_______/ \______/
-
-
-from bson import ObjectId
-
 
 # Add a new Book
 @main.route('/books', methods=['POST'])
@@ -207,7 +175,6 @@ def add_book():
     books_collection.insert_one(data)
     return jsonify({'message': 'Book added successfully!'}), 201
 
-
 # Fetch all Books
 @main.route('/books', methods=['GET'])
 def get_books():
@@ -215,7 +182,6 @@ def get_books():
     for book in books:
         book['_id'] = str(book['_id'])
     return jsonify(books), 200
-
 
 # Fetch a Book by ID
 @main.route('/books/<string:book_id>', methods=['GET'])
@@ -229,7 +195,6 @@ def get_book_by_id(book_id):
         return jsonify(book), 200
     return jsonify({'message': 'Book not found!'}), 404
 
-
 # Update a Book
 @main.route('/books/<string:book_id>', methods=['PUT'])
 def update_book(book_id):
@@ -242,7 +207,6 @@ def update_book(book_id):
         return jsonify({'message': 'Book updated successfully!'}), 200
     return jsonify({'message': 'Book not found!'}), 404
 
-
 # Delete a Book
 @main.route('/books/<string:book_id>', methods=['DELETE'])
 def delete_book(book_id):
@@ -254,17 +218,17 @@ def delete_book(book_id):
         return jsonify({'message': 'Book deleted successfully!'}), 200
     return jsonify({'message': 'Book not found!'}), 404
 
-
 #################################################################################################
-
-            #
+            # | | | | ___   ___  _ __
+            # | | | |/ __| / _ \| '__|
+            # | |_| |\__ \|  __/| |
+            #  \___/ |___/ \___||_|
             #  _____             _                _         _
             # | ____| _ __    __| | _ __    ___  (_) _ __  | |_  ___
             # |  _|  | '_ \  / _` || '_ \  / _ \ | || '_ \ | __|/ __|
             # | |___ | | | || (_| || |_) || (_) || || | | || |_ \__ \
             # |_____||_| |_| \__,_|| .__/  \___/ |_||_| |_| \__||___/
             #                      |_|
-
 ################################################################################################
 
     #    _  _   .___________.  ______    _______   ______
@@ -273,8 +237,7 @@ def delete_book(book_id):
     #  _| || |_     |  |     |  |  |  | |  |  |  |  |  |  |
     # |_  __  _|    |  |     |  `--'  | |  '--'  |  `--'  |
     #   |_||_|      |__|      \______/  |_______/ \______/
-
-    #Complete User endpoints
+    #   Verify User endpoint are complete
 
 # Add a new User
 @main.route('/users', methods=['POST'])
@@ -290,7 +253,6 @@ def add_user():
     users_collection.insert_one(data)
     return jsonify({'message': 'User added successfully!'}), 201
 
-
 # Fetch all Users
 @main.route('/users', methods=['GET'])
 def get_users():
@@ -298,7 +260,6 @@ def get_users():
     for user in users:
         user['_id'] = str(user['_id'])
     return jsonify(users), 200
-
 
 # Fetch a User by ID
 @main.route('/users/<string:user_id>', methods=['GET'])
@@ -311,7 +272,6 @@ def get_user_by_id(user_id):
         user['_id'] = str(user['_id'])
         return jsonify(user), 200
     return jsonify({'message': 'User not found!'}), 404
-
 
 # Update a User
 @main.route('/users/<string:user_id>', methods=['PUT'])
@@ -332,8 +292,103 @@ def delete_user(user_id):
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    result = users.delete_one({'_id': ObjectId(user_id)})
-    print(result.deleted_count)
+    result = users_collection.delete_one({'_id': ObjectId(user_id)})
     if result.deleted_count > 0:
         return jsonify({'message': 'User deleted successfully!'}), 200
     return jsonify({'message': 'User not found!'}), 404
+
+@main.route('/users/password/<string:user_id>', methods=['PUT'])
+def update_password(user_id):
+    data = request.json
+    new_password = data.get('new_password')
+
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID'}), 400
+
+    if not new_password or len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+
+    hashed = bcrypt.generate_password_hash(new_password).decode('utf-8')
+
+    result = users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        #ONLY STORES THE HASHED VERSION OF THE PASSWORD OTHER THAN THE PASSWORD ITSELF, IF CHECKING PASSWORD VERIFY YOU ARE HASHING BEFORE STORING/COMPARING
+        {'$set': {'password': hashed}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({'message': 'Password updated successfully!'}), 200
+
+@main.route('/users/email/<string:user_id>', methods=['PUT'])
+def update_email(user_id):
+    data = request.json
+    new_email = data.get('new_email')
+
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID'}), 400
+
+    if not new_email or '@' not in new_email:
+        return jsonify({'error': 'Invalid email address'}), 400
+
+    if not new_email or '.' not in new_email:
+        return jsonify({'error': 'Invalid email address'}), 400
+
+    if users_collection.find_one({'email': new_email}):
+        return jsonify({'error': 'Email already in use'}), 409
+
+    result = users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'email': new_email}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({'message': 'Email updated successfully!'}), 200
+
+@main.route('/users/profile-picture/<string:user_id>/', methods=['PUT'])
+def update_profile_picture(user_id):
+    data = request.json
+    new_picture_url = data.get('profile_picture')
+
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID'}), 400
+
+    if not new_picture_url or not new_picture_url.startswith('http'):
+        return jsonify({'error': 'Invalid image URL'}), 400
+
+    result = users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'profile_picture': new_picture_url}}
+    )
+
+    if result.matched_count == 0:
+        return jsonify({'error': 'User not found'}), 404
+
+    return jsonify({'message': 'Profile picture updated!'}), 200
+
+@main.route('/users/username/<string:user_id>', methods=['PUT'])
+def update_username(user_id):
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid ID format!'}), 400
+
+    data = request.json
+    new_username = data.get('new_username')
+
+    if not new_username:
+        return jsonify({'error': 'New username is required'}), 400
+
+    # Check if username already exists
+    if users_collection.find_one({'username': new_username}):
+        return jsonify({'error': 'Username already taken'}), 409
+
+    result = users_collection.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'username': new_username}}
+    )
+
+    if result.matched_count > 0:
+        return jsonify({'message': 'Username updated successfully!'}), 200
+    return jsonify({'error': 'User not found'}), 404
