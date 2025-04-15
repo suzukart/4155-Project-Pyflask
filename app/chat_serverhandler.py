@@ -3,16 +3,28 @@ import threading
 from datetime import datetime, timezone, timedelta
 
 from flask import Blueprint, request, jsonify
-from flask_socketio import SocketIO, emit, join_room, leave_room
+from flask_socketio import SocketIO, emit, join_room, leave_room, disconnect
 from flask_login import current_user
 from app import db, users
+import functools
 
 chat = Blueprint('chat', __name__)
 socketio = SocketIO()
 
 typing_users = {} # empty Dictionary to keep track of typing users
 
+#authentication decorator
+def authenticated_only(f):
+    @functools.wraps(f)
+    def wrapped(*args, **kwargs):
+        if not current_user.is_authenticated:
+            disconnect()
+        else:
+            return f(*args, **kwargs)
+    return wrapped
+
 @socketio.on('join', namespace='/chat')
+@authenticated_only
 def handle_join(data):
     if not current_user.is_authenticated:
         return emit('error', {'msg': 'User not authenticated.'})
@@ -33,6 +45,7 @@ def handle_leave(data):
     emit('message', {'msg': f'{username} has left the room.'}, room=room)
 
 @socketio.on('send_message', namespace='/chat')
+@authenticated_only
 def handle_send_message(data):
     if not current_user.is_authenticated:
         return emit('error', {'msg': 'User not authenticated.'})
@@ -50,6 +63,7 @@ def handle_send_message(data):
     emit('message', {'msg': f'{username}: {message}'}, room=room)
 
 @socketio.on('get_messages', namespace='/chat')
+@authenticated_only
 def handle_get_messages(data):
     if not current_user.is_authenticated:
         return emit('error', {'msg': 'User not authenticated.'})
@@ -116,4 +130,4 @@ def handle_stop_typing(data):
         typing_users[room].discard(username)
         # Emit updated list of typing users to the room
         emit('typing', {'users': list(typing_users[room])}, room=room)
-    
+
