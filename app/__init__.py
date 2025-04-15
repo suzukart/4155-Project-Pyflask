@@ -24,6 +24,7 @@ client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
+orders = db.get_collection('orders')
 active_sessions = db.get_collection('active_sessions')
 
 def create_app():
@@ -97,5 +98,7 @@ def create_app():
     app.register_blueprint(main_blueprint, url_prefix='/api')
     from app.profile import profile as profile_blueprint
     app.register_blueprint(profile_blueprint, url_prefix='/api/profile')
+    from app.cart import cart as cart_blueprint
+    app.register_blueprint(cart_blueprint, url_prefix='/api/cart')
 
     return app
