@@ -1,6 +1,7 @@
 from flask import jsonify, request, Blueprint
 from app import db, bcrypt
 from bson import ObjectId
+import gridfs
 
 main = Blueprint('main', __name__)
 
@@ -9,6 +10,8 @@ products_collection = db['products']  # Access the "products" collection
 listings_collection = db['Listings']  # Access the "Listings" collection
 books_collection = db['Books'] # Access the "Books" collection
 users_collection = db['Users'] # Access the "Users" collection
+
+fs = gridfs.GridFS(db) # Establish the gridfs to upload images
 
 @main.route('/')
 def home():
@@ -82,11 +85,28 @@ def get_products_under(price):
 
 # Add a new Listing
 @main.route('/listings', methods=['POST'])
+@main.route('/listings', methods=['POST'])
 def add_listing():
-    data = request.json
-    if not all(key in data for key in ('Image', 'Price', 'City', 'Category')):
+    if 'Image' not in request.files:
+        return jsonify({'message': 'Image file is required'}), 400
+
+    image_file = request.files['Image']
+    other_fields = request.form  # Get remaining fields from form-data
+
+    required_fields = ('Price', 'City', 'Category')
+    if not all(key in other_fields for key in required_fields):
         return jsonify({'message': 'Missing required fields'}), 400
-    listings_collection.insert_one(data)
+
+    image_id = fs.put(image_file, filename=image_file.filename)
+
+    listing_data = {
+        'Image': str(image_id),
+        'Price': other_fields['Price'],
+        'City': other_fields['City'],
+        'Category': other_fields['Category']
+    }
+
+    listings_collection.insert_one(listing_data)
     return jsonify({'message': 'Listing added successfully!'}), 201
 
 # Fetch all Listings
@@ -116,8 +136,25 @@ def update_listing(id):
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    data = request.json
-    result = listings_collection.update_one({'_id': ObjectId(id)}, {'$set': data})
+    update_fields = {}
+
+    if 'Image' in request.files:
+        image_file = request.files['Image']
+        image_id = fs.put(image_file, filename=image_file.filename)
+        update_fields['Image'] = str(image_id)
+
+    for field in ('Price', 'City', 'Category'):
+        if field in request.form:
+            update_fields[field] = request.form[field]
+
+    if not update_fields:
+        return jsonify({'message': 'No data to update'}), 400
+
+    result = listings_collection.update_one({'_id': ObjectId(id)}, {'$set': update_fields})
+
+    if result.matched_count > 0:
+        return jsonify({'message': 'Listing updated successfully!'}), 200
+    return jsonify({'message': 'Listing not found!'}), 404
 
     if result.matched_count > 0:
         return jsonify({'message': 'Listing updated successfully!'}), 200
@@ -350,22 +387,26 @@ def update_email(user_id):
 
 @main.route('/users/profile-picture/<string:user_id>/', methods=['PUT'])
 def update_profile_picture(user_id):
-    data = request.json
-    new_picture_url = data.get('profile_picture')
+    if 'profile_picture' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['profile_picture']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
 
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid user ID'}), 400
 
-    if not new_picture_url or not new_picture_url.startswith('http'):
-        return jsonify({'error': 'Invalid image URL'}), 400
 
-    result = users_collection.update_one(
+    file_id = fs.put(file, filename=file.filename)
+
+    users_collection.update_one(
         {'_id': ObjectId(user_id)},
-        {'$set': {'profile_picture': new_picture_url}}
+        {'$set': {'profile_picture': str(file_id)}}
     )
 
-    if result.matched_count == 0:
-        return jsonify({'error': 'User not found'}), 404
+    return jsonify({'message': 'Profile picture updated!', 'file_id': str(file_id)}), 200
 
     return jsonify({'message': 'Profile picture updated!'}), 200
 
