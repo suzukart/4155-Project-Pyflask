@@ -1,6 +1,7 @@
 from app import app, db, orders, bcrypt, users
 from flask import Blueprint, jsonify, request, session
 from flask_login import current_user, login_required
+from datetime import datetime
 from bson import ObjectId
 from app.models import Listing
 from app.models import Profile
@@ -56,5 +57,17 @@ def get_cart():
                 'price': listing['price'],
                 'quantity': item['quantity']
             })
+
+    # Ensure the user's purchase_history array exists in their profile
+    users.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$setOnInsert': {'purchase_history': []}},
+        upsert=True
+    )
+    # Append this purchase to the user's purchase_history
+    users.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$push': {'purchase_history': {'items': cart_items, 'purchased_at': datetime.now()}}}
+    )
 
     return jsonify({'cart': cart_listings}), 200
