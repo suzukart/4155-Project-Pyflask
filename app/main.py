@@ -1,6 +1,8 @@
 from flask import jsonify, request, Blueprint
 from app import db, bcrypt
 from bson import ObjectId
+import gridfs
+import datetime
 
 main = Blueprint('main', __name__)
 
@@ -9,6 +11,8 @@ products_collection = db['products']  # Access the "products" collection
 listings_collection = db['Listings']  # Access the "Listings" collection
 books_collection = db['Books'] # Access the "Books" collection
 users_collection = db['Users'] # Access the "Users" collection
+
+fs = gridfs.GridFS(db) # Establish the gridfs to upload images
 
 @main.route('/')
 def home():
@@ -82,11 +86,28 @@ def get_products_under(price):
 
 # Add a new Listing
 @main.route('/listings', methods=['POST'])
+@main.route('/listings', methods=['POST'])
 def add_listing():
-    data = request.json
-    if not all(key in data for key in ('Image', 'Price', 'City', 'Category')):
+    if 'Image' not in request.files:
+        return jsonify({'message': 'Image file is required'}), 400
+
+    image_file = request.files['Image']
+    other_fields = request.form  # Get remaining fields from form-data
+
+    required_fields = ('Price', 'City', 'Category')
+    if not all(key in other_fields for key in required_fields):
         return jsonify({'message': 'Missing required fields'}), 400
-    listings_collection.insert_one(data)
+
+    image_id = fs.put(image_file, filename=image_file.filename)
+
+    listing_data = {
+        'Image': str(image_id),
+        'Price': other_fields['Price'],
+        'City': other_fields['City'],
+        'Category': other_fields['Category']
+    }
+
+    listings_collection.insert_one(listing_data)
     return jsonify({'message': 'Listing added successfully!'}), 201
 
 # Fetch all Listings
@@ -116,8 +137,25 @@ def update_listing(id):
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
-    data = request.json
-    result = listings_collection.update_one({'_id': ObjectId(id)}, {'$set': data})
+    update_fields = {}
+
+    if 'Image' in request.files:
+        image_file = request.files['Image']
+        image_id = fs.put(image_file, filename=image_file.filename)
+        update_fields['Image'] = str(image_id)
+
+    for field in ('Price', 'City', 'Category'):
+        if field in request.form:
+            update_fields[field] = request.form[field]
+
+    if not update_fields:
+        return jsonify({'message': 'No data to update'}), 400
+
+    result = listings_collection.update_one({'_id': ObjectId(id)}, {'$set': update_fields})
+
+    if result.matched_count > 0:
+        return jsonify({'message': 'Listing updated successfully!'}), 200
+    return jsonify({'message': 'Listing not found!'}), 404
 
     if result.matched_count > 0:
         return jsonify({'message': 'Listing updated successfully!'}), 200
@@ -348,26 +386,38 @@ def update_email(user_id):
 
     return jsonify({'message': 'Email updated successfully!'}), 200
 
+
 @main.route('/users/profile-picture/<string:user_id>/', methods=['PUT'])
 def update_profile_picture(user_id):
-    data = request.json
-    new_picture_url = data.get('profile_picture')
+    if 'profile_picture' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['profile_picture']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
 
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid user ID'}), 400
 
-    if not new_picture_url or not new_picture_url.startswith('http'):
-        return jsonify({'error': 'Invalid image URL'}), 400
+    # Store the user_id with the file as metadata
+    metadata = {
+        'user_id': user_id,
+        'upload_date': datetime.datetime.now(),
+        'content_type': file.content_type
+    }
 
-    result = users_collection.update_one(
+    file_id = fs.put(file,
+                     filename=file.filename,
+                     metadata=metadata)
+
+    users_collection.update_one(
         {'_id': ObjectId(user_id)},
-        {'$set': {'profile_picture': new_picture_url}}
+        {'$set': {'profile_picture': str(file_id)}}
     )
 
-    if result.matched_count == 0:
-        return jsonify({'error': 'User not found'}), 404
+    return jsonify({'message': 'Profile picture updated!', 'file_id': str(file_id)}), 200
 
-    return jsonify({'message': 'Profile picture updated!'}), 200
 
 @main.route('/users/username/<string:user_id>', methods=['PUT'])
 def update_username(user_id):
@@ -392,3 +442,120 @@ def update_username(user_id):
     if result.matched_count > 0:
         return jsonify({'message': 'Username updated successfully!'}), 200
     return jsonify({'error': 'User not found'}), 404
+
+# Helper route to get a user's profile image directly
+@main.route('/users/<string:user_id>/profile-image', methods=['GET'])
+def get_profile_image(user_id):
+    """
+    Retrieve a user's profile image
+    """
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID format'}), 400
+
+    try:
+        # Find the user and get their profile picture ID
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        if not user or 'profile_picture' not in user:
+            return jsonify({'error': 'No profile picture found for this user'}), 404
+
+        # Get the profile picture ID
+        file_id = user['profile_picture']
+
+        # Redirect to the general image endpoint
+        from flask import redirect, url_for
+        return redirect(url_for('main.get_image', file_id=file_id))
+    except Exception as e:
+        return jsonify({'error': f'Error retrieving profile image: {str(e)}'}), 500
+
+
+@main.route('/image/<string:file_id>', methods=['GET'])
+def get_image(file_id):
+    """
+    Retrieve an image from GridFS by its file_id
+    Returns the image data with appropriate content type
+    """
+    if not ObjectId.is_valid(file_id):
+        return jsonify({'error': 'Invalid file ID format'}), 400
+
+    try:
+        # Check if file exists first
+        if not fs.exists(ObjectId(file_id)):
+            return jsonify({'error': 'Image not found'}), 404
+
+        # Find the file by its ID
+        file_data = fs.get(ObjectId(file_id))
+
+        # Create a response with the file data
+        from flask import Response
+        return Response(
+            file_data.read(),
+            mimetype='image/jpeg',  # Default mime type
+            headers={
+                'Content-Disposition': f'inline; filename="{file_data.filename}"'
+            }
+        )
+    except Exception as e:
+        return jsonify({'error': f'Error retrieving image: {str(e)}'}), 500
+
+
+@main.route('/image/<string:file_id>/metadata', methods=['GET'])
+def get_image_metadata(file_id):
+    """
+    Retrieve metadata for an image from GridFS by its file_id
+    """
+    if not ObjectId.is_valid(file_id):
+        return jsonify({'error': 'Invalid file ID format'}), 400
+
+    try:
+        # Get the file object without downloading the content
+        file = db.fs.files.find_one({'_id': ObjectId(file_id)})
+
+        if not file:
+            return jsonify({'error': 'File not found'}), 404
+
+        # Extract relevant metadata
+        metadata = {
+            'filename': file.get('filename'),
+            'content_type': file.get('contentType', 'unknown'),
+            'upload_date': file.get('uploadDate'),
+            'length': file.get('length'),
+        }
+
+        # Add user metadata if exists
+        if 'metadata' in file and file['metadata']:
+            metadata.update(file['metadata'])
+
+        return jsonify(metadata), 200
+    except Exception as e:
+        return jsonify({'error': f'Error retrieving metadata: {str(e)}'}), 500
+
+
+# Find all images for a specific user
+@main.route('/users/<string:user_id>/images', methods=['GET'])
+def get_user_images(user_id):
+    """
+    Find all images that belong to a specific user
+    """
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID format'}), 400
+
+    try:
+        # Query for files with matching user_id in metadata
+        files = list(db.fs.files.find({'metadata.user_id': user_id}))
+
+        if not files:
+            return jsonify({'message': 'No images found for this user', 'images': []}), 200
+
+        # Format the results
+        images = []
+        for file in files:
+            images.append({
+                'file_id': str(file['_id']),
+                'filename': file.get('filename'),
+                'upload_date': file.get('uploadDate'),
+                'metadata': file.get('metadata', {})
+            })
+
+        return jsonify({'images': images}), 200
+    except Exception as e:
+        return jsonify({'error': f'Error retrieving user images: {str(e)}'}), 500
