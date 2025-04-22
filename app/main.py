@@ -433,3 +433,52 @@ def update_username(user_id):
     if result.matched_count > 0:
         return jsonify({'message': 'Username updated successfully!'}), 200
     return jsonify({'error': 'User not found'}), 404
+
+# Helper route to get a user's profile image directly
+@main.route('/users/<string:user_id>/profile-image', methods=['GET'])
+def get_profile_image(user_id):
+    """
+    Retrieve a user's profile image
+    """
+    if not ObjectId.is_valid(user_id):
+        return jsonify({'error': 'Invalid user ID format'}), 400
+
+    try:
+        # Find the user and get their profile picture ID
+        user = users_collection.find_one({'_id': ObjectId(user_id)})
+        if not user or 'profile_picture' not in user:
+            return jsonify({'error': 'No profile picture found for this user'}), 404
+
+        # Get the profile picture ID
+        file_id = user['profile_picture']
+
+        # Redirect to the general image endpoint
+        from flask import redirect, url_for
+        return redirect(url_for('main.get_image', file_id=file_id))
+    except Exception as e:
+        return jsonify({'error': f'Error retrieving profile image: {str(e)}'}), 500
+
+    @main.route('/image/<string:file_id>', methods=['GET'])
+    def get_image(file_id):
+        """
+        Retrieve an image from GridFS by its file_id
+        Returns the image data with appropriate content type
+        """
+        if not ObjectId.is_valid(file_id):
+            return jsonify({'error': 'Invalid file ID format'}), 400
+
+        try:
+            # Find the file by its ID
+            file_data = fs.get(ObjectId(file_id))
+
+            # Create a response with the file data
+            from flask import Response
+            return Response(
+                file_data.read(),
+                mimetype='image/jpeg',  # You might want to store and use the actual mime type
+                headers={
+                    'Content-Disposition': f'inline; filename="{file_data.filename}"'
+                }
+            )
+        except Exception as e:
+            return jsonify({'error': f'Image not found: {str(e)}'}), 404
