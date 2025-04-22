@@ -1,4 +1,4 @@
-from app import app, db, orders, bcrypt, users
+from app import db, orders, bcrypt, users
 from flask import Blueprint, jsonify, request, session
 from flask_login import current_user, login_required
 from datetime import datetime
