@@ -44,7 +44,8 @@ def signup():
         'email': email,
         'username': username,
         'password': hashed,
-        'sessions': []
+        'sessions': [],
+        'purchase_history': []
     }
     result = users.insert_one(user_info)
     user_info['_id'] = result.inserted_id
