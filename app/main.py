@@ -32,6 +32,8 @@ def home():
 #################################################################################################
 #Some endpoints created with the help of ChatGPT
 ###############################################
+# http://localhost:5000/apidocs/
+#################################
 # Fetch all products
 @main.route('/products', methods=['GET'])
 def get_products():
@@ -86,8 +88,37 @@ def get_products_under(price):
 
 # Add a new Listing
 @main.route('/listings', methods=['POST'])
-@main.route('/listings', methods=['POST'])
 def add_listing():
+    """
+    Add a new listing with image
+    ---
+    tags:
+      - Listings
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: Image
+        in: formData
+        type: file
+        required: true
+      - name: Price
+        in: formData
+        type: string
+        required: true
+      - name: City
+        in: formData
+        type: string
+        required: true
+      - name: Category
+        in: formData
+        type: string
+        required: true
+    responses:
+      201:
+        description: Listing added successfully
+      400:
+        description: Missing required fields
+    """
     if 'Image' not in request.files:
         return jsonify({'message': 'Image file is required'}), 400
 
@@ -113,6 +144,15 @@ def add_listing():
 # Fetch all Listings
 @main.route('/listings', methods=['GET'])
 def get_listings():
+    """
+    Get all listings
+    ---
+    tags:
+      - Listings
+    responses:
+      200:
+        description: A list of all listings
+    """
     listings = list(listings_collection.find({}))
     for listing in listings:
         listing['_id'] = str(listing['_id'])
@@ -120,6 +160,24 @@ def get_listings():
 
 @main.route('/listings/<string:id>', methods=['GET'])
 def get_listing_by_id(id):
+    """
+    Get listing by ID
+    ---
+    tags:
+      - Listings
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    responses:
+      200:
+        description: Listing found
+      400:
+        description: Invalid ID format
+      404:
+        description: Listing not found
+    """
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
     try:
@@ -134,6 +192,42 @@ def get_listing_by_id(id):
 # Update a Listing
 @main.route('/listings/<string:id>', methods=['PUT'])
 def update_listing(id):
+    """
+    Update a listing by ID
+    ---
+    tags:
+      - Listings
+    consumes:
+      - multipart/form-data
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+      - name: Image
+        in: formData
+        type: file
+        required: false
+      - name: Price
+        in: formData
+        type: string
+        required: false
+      - name: City
+        in: formData
+        type: string
+        required: false
+      - name: Category
+        in: formData
+        type: string
+        required: false
+    responses:
+      200:
+        description: Listing updated successfully
+      400:
+        description: Invalid ID or no data to update
+      404:
+        description: Listing not found
+    """
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -164,6 +258,24 @@ def update_listing(id):
 # Delete a Listing
 @main.route('/listings/<string:id>', methods=['DELETE'])
 def delete_listing(id):
+    """
+    Delete a listing by ID
+    ---
+    tags:
+      - Listings
+    parameters:
+      - name: id
+        in: path
+        required: true
+        type: string
+    responses:
+      200:
+        description: Listing deleted successfully
+      400:
+        description: Invalid ID format
+      404:
+        description: Listing not found
+    """
     if not ObjectId.is_valid(id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -175,12 +287,40 @@ def delete_listing(id):
 
 @main.route('/listings/under/<float:price>', methods=['GET'])
 def get_listings_under(price):
+    """
+    Get listings under a given price
+    ---
+    tags:
+      - Listings
+    parameters:
+      - name: price
+        in: path
+        required: true
+        type: number
+    responses:
+      200:
+        description: Listings under the given price
+    """
     listings = list(listings_collection.find({'Price': {'$lt': price}}, {'_id': 0}))
     return jsonify(listings)
 
 # Get Listings by Category
 @main.route('/listings/category/<category>', methods=['GET'])
 def get_listings_by_category(category):
+    """
+    Get listings by category
+    ---
+    tags:
+      - Listings
+    parameters:
+      - name: category
+        in: path
+        required: true
+        type: string
+    responses:
+      200:
+        description: Listings matching the category
+    """
     listings = list(listings_collection.find({'Category': category}, {'_id': 0}))
     return jsonify(listings), 200
 
@@ -200,6 +340,36 @@ def get_listings_by_category(category):
 # Add a new Book
 @main.route('/books', methods=['POST'])
 def add_book():
+    """
+    Add a new book
+    ---
+    tags:
+      - Books
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - item
+              - itemLabel
+              - linkTo
+              - mainSubject
+              - mainSubjectLabel
+            properties:
+              item: { type: string }
+              itemLabel: { type: string }
+              linkTo: { type: string }
+              mainSubject: { type: string }
+              mainSubjectLabel: { type: string }
+              _id: { type: string, example: "optional ObjectId string" }
+    responses:
+      201:
+        description: Book added successfully
+      400:
+        description: Invalid input
+    """
     data = request.json
     if not all(key in data for key in ('item', 'itemLabel', 'linkTo', 'mainSubject', 'mainSubjectLabel')):
         return jsonify({'message': 'Missing required fields'}), 400
@@ -216,6 +386,15 @@ def add_book():
 # Fetch all Books
 @main.route('/books', methods=['GET'])
 def get_books():
+    """
+    Get all books
+    ---
+    tags:
+      - Books
+    responses:
+      200:
+        description: List of books
+    """
     books = list(books_collection.find({}))
     for book in books:
         book['_id'] = str(book['_id'])
@@ -224,6 +403,25 @@ def get_books():
 # Fetch a Book by ID
 @main.route('/books/<string:book_id>', methods=['GET'])
 def get_book_by_id(book_id):
+    """
+    Get a book by ID
+    ---
+    tags:
+      - Books
+    parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Book found
+      404:
+        description: Book not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(book_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -236,6 +434,31 @@ def get_book_by_id(book_id):
 # Update a Book
 @main.route('/books/<string:book_id>', methods=['PUT'])
 def update_book(book_id):
+    """
+    Update a book by ID
+    ---
+    tags:
+      - Books
+    parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      200:
+        description: Book updated successfully
+      404:
+        description: Book not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(book_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -248,6 +471,25 @@ def update_book(book_id):
 # Delete a Book
 @main.route('/books/<string:book_id>', methods=['DELETE'])
 def delete_book(book_id):
+    """
+    Delete a book by ID
+    ---
+    tags:
+      - Books
+    parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Book deleted successfully
+      404:
+        description: Book not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(book_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -280,6 +522,27 @@ def delete_book(book_id):
 # Add a new User
 @main.route('/users', methods=['POST'])
 def add_user():
+    """
+    Add a new user
+    ---
+    tags:
+      - Users
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            example:
+              name: John Doe
+              email: john@example.com
+              _id: optional ObjectId string
+    responses:
+      201:
+        description: User added successfully
+      400:
+        description: Invalid ID format
+    """
     data = request.json
 
     # Convert _id to ObjectId if provided
@@ -294,6 +557,15 @@ def add_user():
 # Fetch all Users
 @main.route('/users', methods=['GET'])
 def get_users():
+    """
+    Get all users
+    ---
+    tags:
+      - Users
+    responses:
+      200:
+        description: List of users
+    """
     users = list(users_collection.find({}))
     for user in users:
         user['_id'] = str(user['_id'])
@@ -302,6 +574,25 @@ def get_users():
 # Fetch a User by ID
 @main.route('/users/<string:user_id>', methods=['GET'])
 def get_user_by_id(user_id):
+    """
+    Get a user by ID
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: User found
+      404:
+        description: User not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -314,6 +605,31 @@ def get_user_by_id(user_id):
 # Update a User
 @main.route('/users/<string:user_id>', methods=['PUT'])
 def update_user(user_id):
+    """
+    Update a user by ID
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+    responses:
+      200:
+        description: User updated successfully
+      404:
+        description: User not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -327,6 +643,25 @@ def update_user(user_id):
 # Delete a User
 @main.route('/users/<string:user_id>', methods=['DELETE'])
 def delete_user(user_id):
+    """
+    Delete a user by ID
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: User deleted successfully
+      404:
+        description: User not found
+      400:
+        description: Invalid ID format
+    """
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
@@ -337,6 +672,40 @@ def delete_user(user_id):
 
 @main.route('/users/password/<string:user_id>', methods=['PUT'])
 def update_password(user_id):
+    """
+    Update a user's password.
+
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID of the user to update
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - new_password
+            properties:
+              new_password:
+                type: string
+                minLength: 6
+                description: New password for the user
+    responses:
+      200:
+        description: Password updated successfully
+      400:
+        description: Invalid user ID or password format
+      404:
+        description: User not found
+    """
     data = request.json
     new_password = data.get('new_password')
 
@@ -361,6 +730,42 @@ def update_password(user_id):
 
 @main.route('/users/email/<string:user_id>', methods=['PUT'])
 def update_email(user_id):
+    """
+    Update a user's email address.
+
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID of the user to update
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - new_email
+            properties:
+              new_email:
+                type: string
+                format: email
+                description: New email address for the user
+    responses:
+      200:
+        description: Email updated successfully
+      400:
+        description: Invalid user ID or email format
+      404:
+        description: User not found
+      409:
+        description: Email already in use
+    """
     data = request.json
     new_email = data.get('new_email')
 
@@ -389,6 +794,38 @@ def update_email(user_id):
 
 @main.route('/users/profile-picture/<string:user_id>/', methods=['PUT'])
 def update_profile_picture(user_id):
+    """
+    Upload and update a user's profile picture.
+
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID of the user to update
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            required:
+              - profile_picture
+            properties:
+              profile_picture:
+                type: string
+                format: binary
+                description: Profile picture file to upload
+    responses:
+      200:
+        description: Profile picture updated successfully
+      400:
+        description: Missing or invalid input
+    """
     if 'profile_picture' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
@@ -421,6 +858,41 @@ def update_profile_picture(user_id):
 
 @main.route('/users/username/<string:user_id>', methods=['PUT'])
 def update_username(user_id):
+    """
+    Update a user's username.
+
+    ---
+    tags:
+      - Users
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        description: ID of the user to update
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - new_username
+            properties:
+              new_username:
+                type: string
+                description: New username to set
+    responses:
+      200:
+        description: Username updated successfully
+      400:
+        description: Invalid input or missing data
+      404:
+        description: User not found
+      409:
+        description: Username already taken
+    """
     if not ObjectId.is_valid(user_id):
         return jsonify({'error': 'Invalid ID format!'}), 400
 
