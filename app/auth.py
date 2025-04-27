@@ -44,7 +44,8 @@ def signup():
         'email': email,
         'username': username,
         'password': hashed,
-        'sessions': []
+        'sessions': [],
+        'purchase_history': []
     }
     result = users.insert_one(user_info)
     user_info['_id'] = result.inserted_id
@@ -81,7 +82,7 @@ def login():
             return jsonify({
                 'message': 'Success!',
                 'user': {
-                    'id': user.get_id(),
+                    '_id': str(user_info['_id']),
                     'email': user.email,
                     'username': user.username
                 },
