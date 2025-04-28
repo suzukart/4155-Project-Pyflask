@@ -9,6 +9,11 @@ class Profile(UserMixin):
         self.username = user_data['username']
         self.password = user_data['password']
         self.sessions = user_data['sessions']
+        self.purchase_history = user_data['purchase_history']
+        self.cart = user_data.get('cart', [])
+        self.profile_image = user_data.get('profile_image', None)
+        self.listings = user_data.get('listings', [])
+
 
     def get_id(self):
         """Return the user ID (used by Flask-Login)."""

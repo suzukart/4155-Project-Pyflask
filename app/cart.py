@@ -58,16 +58,38 @@ def get_cart():
                 'quantity': item['quantity']
             })
 
+    # Return only the user's cart
+    return jsonify({'cart': cart_listings}), 200
+
+@cart.route('/checkout', methods=['POST'])
+@login_required
+def checkout():
+    user_id = current_user.get_id()
+    # Get the user's cart
+    user_cart_data = orders.find_one({'_id': ObjectId(user_id)}, {'cart': 1})
+    
+    if not user_cart_data or not user_cart_data.get('cart'):
+        return jsonify({'message': 'Cart is empty, cannot proceed with checkout.'}), 400
+    
+    cart_items = user_cart_data['cart']
+    
     # Ensure the user's purchase_history array exists in their profile
     users.update_one(
         {'_id': ObjectId(user_id)},
         {'$setOnInsert': {'purchase_history': []}},
         upsert=True
     )
-    # Append this purchase to the user's purchase_history
+    # Append the entire cart to purchase_history
     users.update_one(
         {'_id': ObjectId(user_id)},
         {'$push': {'purchase_history': {'items': cart_items, 'purchased_at': datetime.now()}}}
     )
+    
+    # Clear the user's cart
+    orders.update_one(
+        {'_id': ObjectId(user_id)},
+        {'$set': {'cart': []}}
+    )
+    
+    return jsonify({'message': 'Checkout successful. Purchase history updated.'}), 200
 
-    return jsonify({'cart': cart_listings}), 200
