@@ -9,6 +9,7 @@ from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_cors import CORS
 from bson.objectid import ObjectId
 from flask_socketio import SocketIO
+from flasgger import Swagger
 
 current_directory_name = os.path.dirname(os.path.abspath('__init__.py'))
 parent_directory_name = os.path.join(current_directory_name,'..')
@@ -107,7 +108,15 @@ def create_app():
     from app.cart import cart as cart_blueprint
     app.register_blueprint(cart_blueprint, url_prefix='/api/cart')
 
+
     from app import chat_serverhandler
     app.register_blueprint(chat_serverhandler.chat, url_prefix='/chat')
+
+    # Swagger setup
+    app.config['SWAGGER'] = {
+        'title': 'Textbook Store API',
+        'uiversion': 3
+    }
+    Swagger(app)
 
     return app
