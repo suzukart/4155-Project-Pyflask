@@ -28,6 +28,7 @@ dotenv==0.9.9
 executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.13.4
+flasgger==0.9.5
 Flask==3.1.0
 Flask-Bcrypt==1.0.1
 flask-cors==5.0.1
