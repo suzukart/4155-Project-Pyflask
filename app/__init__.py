@@ -107,4 +107,7 @@ def create_app():
     from app.cart import cart as cart_blueprint
     app.register_blueprint(cart_blueprint, url_prefix='/api/cart')
 
+    from app import chat_serverhandler
+    app.register_blueprint(chat_serverhandler.chat, url_prefix='/chat')
+
     return app
