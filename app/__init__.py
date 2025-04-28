@@ -59,7 +59,7 @@ def create_app():
 
     # Development CORS enabled
     #TODO: REMOVE THIS BEFORE DEPLOYMENT
-    CORS(app)
+    CORS(app, supports_credentials=True, resources={r'/*': {'origins': '*'}})
 
     # User loader function for Flask-Login
     from app.models import Profile
