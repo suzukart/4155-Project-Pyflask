@@ -27,7 +27,7 @@ db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
 listings = db.get_collection('Listings')
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins="*")  
 orders = db.get_collection('orders')
 active_sessions = db.get_collection('active_sessions')
 
