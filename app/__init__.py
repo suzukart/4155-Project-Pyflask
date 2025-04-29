@@ -30,6 +30,7 @@ listings = db.get_collection('Listings')
 socketio = SocketIO(cors_allowed_origins="*")  
 orders = db.get_collection('orders')
 active_sessions = db.get_collection('active_sessions')
+products = db.get_collection('products')
 
 def create_app():
     app = Flask(__name__)
