@@ -55,13 +55,13 @@ def create_app():
 
     # Enable CORS (uncomment for production)
     # Production CORS
-    CORS(app, resources={r'/api/*': {
+    '''CORS(app, resources={r'/api/*': {
         'origins': 'https://textbook-sharing-application.vercel.app'}}, 
-         supports_credentials=True)
+         supports_credentials=True)'''
 
     # Development CORS enabled
     #TODO: REMOVE THIS BEFORE DEPLOYMENT
-    # CORS(app, supports_credentials=True, resources={r'/*': {'origins': '*'}})
+    CORS(app, supports_credentials=True, resources={r'/*': {'origins': '*'}})
 
     # User loader function for Flask-Login
     from app.models import Profile
