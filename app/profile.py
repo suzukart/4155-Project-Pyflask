@@ -12,7 +12,10 @@ def user_profile(username):
         return jsonify({
             'id': user.get_id(),
             'email': user.email,
-            'username': user.username
+            'username': user.username,
+            'listing': user.listings,
+            'profile_image': user.profile_image,
+            'purchase_history': user.purchase_history,
         }), 200
     else:
         return jsonify({

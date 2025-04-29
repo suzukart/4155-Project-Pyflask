@@ -8,6 +8,7 @@ from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, current_user, login_required, logout_user
 from flask_cors import CORS
 from bson.objectid import ObjectId
+from flask_socketio import SocketIO
 from flasgger import Swagger
 
 current_directory_name = os.path.dirname(os.path.abspath('__init__.py'))
@@ -25,35 +26,42 @@ client = MongoClient(uri)
 db = client.get_database('textbookstore')
 users = db.get_collection('users')
 books = db.get_collection('Books')
+listings = db.get_collection('Listings')
+socketio = SocketIO(cors_allowed_origins="*")  
 orders = db.get_collection('orders')
 active_sessions = db.get_collection('active_sessions')
+products = db.get_collection('products')
 
 def create_app():
     app = Flask(__name__)
     app.config['MONGO_URI'] = uri
     app.config['SECRET_KEY'] = os.getenv('secret_key')
+
+    #Session stuff
     app.config["SESSION_TYPE"] = "mongodb"
     app.config["SESSION_MONGODB"] = client
     app.config["SESSION_MONGODB_DB"] = "textbookstore"
     app.config["SESSION_MONGODB_COLLECT"] = "active_sessions"
     app.config["SESSION_PERMANENT"] = True
     app.config["SESSION_USE_SIGNER"] = True
+    Session(app)
 
     # Initialize extensions with the app.
-    Session(app)
+    socketio.init_app(app)
     mongo.init_app(app)
     bcrypt.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
     # Enable CORS (uncomment for production)
-    #CORS(app, resources={r'/api/*': {
-    #    'origins': 'https://textbook-sharing-application.vercel.app'}
-    #})
+    # Production CORS
+    '''CORS(app, resources={r'/api/*': {
+        'origins': 'https://textbook-sharing-application.vercel.app'}}, 
+         supports_credentials=True)'''
 
     # Development CORS enabled
     #TODO: REMOVE THIS BEFORE DEPLOYMENT
-    CORS(app)
+    CORS(app, supports_credentials=True, resources={r'/*': {'origins': '*'}})
 
     # User loader function for Flask-Login
     from app.models import Profile
@@ -101,6 +109,10 @@ def create_app():
     app.register_blueprint(profile_blueprint, url_prefix='/api/profile')
     from app.cart import cart as cart_blueprint
     app.register_blueprint(cart_blueprint, url_prefix='/api/cart')
+
+
+    from app import chat_serverhandler
+    app.register_blueprint(chat_serverhandler.chat, url_prefix='/chat')
 
     # Swagger setup
     app.config['SWAGGER'] = {

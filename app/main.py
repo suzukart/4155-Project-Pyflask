@@ -1,5 +1,5 @@
 from flask import jsonify, request, Blueprint
-from app import db, bcrypt
+from app import db, bcrypt, users
 from bson import ObjectId
 import gridfs
 import datetime
@@ -125,7 +125,8 @@ def add_listing():
     image_file = request.files['Image']
     other_fields = request.form  # Get remaining fields from form-data
 
-    required_fields = ('Price', 'City', 'Category')
+    # Require user_id along with other required fields
+    required_fields = ('Price', 'City', 'Category', 'user_id')
     if not all(key in other_fields for key in required_fields):
         return jsonify({'message': 'Missing required fields'}), 400
 
@@ -135,11 +136,21 @@ def add_listing():
         'Image': str(image_id),
         'Price': other_fields['Price'],
         'City': other_fields['City'],
-        'Category': other_fields['Category']
+        'Category': other_fields['Category'],
+        'user_id': other_fields['user_id']
     }
 
-    listings_collection.insert_one(listing_data)
-    return jsonify({'message': 'Listing added successfully!'}), 201
+    result = listings_collection.insert_one(listing_data)
+    listing_id = result.inserted_id
+
+    # Update the user's document to include this new listing id
+    if ObjectId.is_valid(other_fields['user_id']):
+        users_collection.update_one(
+            {'_id': ObjectId(other_fields['user_id'])},
+            {'$push': {'listings': str(listing_id)}}
+        )
+
+    return jsonify({'message': 'Listing added successfully!', 'listing_id': str(listing_id)}), 201
 
 # Fetch all Listings
 @main.route('/listings', methods=['GET'])
