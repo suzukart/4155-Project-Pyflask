@@ -1,5 +1,5 @@
 from flask import jsonify, request, Blueprint
-from app import db, bcrypt, users, books, listings, orders, active_sessions, products
+from app import db, bcrypt, users
 from bson import ObjectId
 import gridfs
 import datetime
@@ -7,10 +7,10 @@ import datetime
 main = Blueprint('main', __name__)
 
 # Connect to MongoDB
-products_collection = products  # Access the "products" collection
-listings_collection = listings  # Access the "Listings" collection
-books_collection = books # Access the "Books" collection
-users_collection = users # Access the "Users" collection
+products_collection = db['products']  # Access the "products" collection
+listings_collection = db['Listings']  # Access the "Listings" collection
+books_collection = db['Books'] # Access the "Books" collection
+users_collection = db['Users'] # Access the "Users" collection
 
 fs = gridfs.GridFS(db) # Establish the gridfs to upload images
 
@@ -577,8 +577,8 @@ def get_users():
       200:
         description: List of users
     """
-    users_list = list(users_collection.find({}))
-    for user in users_list:
+    users = list(users_collection.find({}))
+    for user in users:
         user['_id'] = str(user['_id'])
     return jsonify(users), 200
 
